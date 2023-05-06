@@ -7,15 +7,19 @@ const welcome = require("./welcome")
 welcome.display();
 
 const app = express();
-const events = new List()
-
+const socket_sessions = new Map()
 const wsServer = new ws.Server({ noServer: true});
 
-wsServer.on('connection', socket => {
-	events.clear();
-	console.log("clearing events");
-	socket.on('message', message =>{
-		events.add(JSON.parse(message))
+wsServer.on('connection', (ws, req) => {
+	const remoteAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+	const session = {id:socket_sessions.size, time: new Date().toLocaleString('zh-CN'), name: remoteAddress, events:new List()}
+	socket_sessions.set(ws,  session);
+	console.log("new session", session.id);
+	ws.on('message', message =>{
+		const session = socket_sessions.get(ws);
+		console.log("got event on session",session.id, message);
+		
+		session.events.add(JSON.parse(message))
 	})
 });
 
@@ -35,5 +39,13 @@ open('http://localhost:3000/');
 
 app.set('view engine', 'pug')
 app.get('/', function (req, res) {
-  res.render('index', { title: 'Remote Logger', message: 'Remote Logger!', data: events.toArray() })
+	const array = Array.from(socket_sessions.values());
+  res.render('index', { title: 'Remote Logger', message: 'Remote Logger Sessions!', data: array })
+})
+
+app.get('/:sessionId', function (req, res) {
+	const sessionId = req.params.sessionId;
+	const array = Array.from(socket_sessions.values());
+  const session = array.find(ele => ele.id == sessionId)
+  res.render('event', { title: 'Remote Logger', message: 'Remote Logger Session [' + session.id + '] Events!', data: session.events.toArray() })
 })

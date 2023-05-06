@@ -6,5 +6,5 @@ html
   body
     h1= message
     ul
-      each event in data
-          li(class=event.level)!= event.time+' <b>['+event.level+'] '+event.tag+'</b>  : ' + '<span style="white-space: pre-wrap">'+event.message+'</span>'
+      each session in data
+          li(class='session')!= '<a href="/' + session.id + '"> session ' + session.id + ' <b>['+session.time+'] </b>   ' + '<span style="white-space: pre-wrap" > messages count '+session.events.length+'</span>' + '</a>'
